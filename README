@@ -211,7 +211,7 @@ To accomplish these and other cases where **dynamic configuration** of the ssl r
                   }
                   break;
             }
-            // not dynamic config
+            // no dynamic config
             return array();
         }
 

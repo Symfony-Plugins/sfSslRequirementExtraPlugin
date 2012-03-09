@@ -79,7 +79,7 @@ class sfSslRequirementActionMixin
      $action->_dynamic_config = $config;
   }
   
-  protected function getDynamicConfig( $action )
+  protected function getSslDynamicConfig( $action )
   {
      if (isset($action->_dynamic_config)) 
      {
@@ -91,9 +91,9 @@ class sfSslRequirementActionMixin
      }
   }
   
-  protected function getDynamicConfigValue( $action, $name, $default )
+  protected function getSslDynamicConfigValue( $action, $name, $default )
   {
-     $dynconfig = $this->getDynamicConfig($action);
+     $dynconfig = $this->getSslDynamicConfig($action);
      if (isset($dynconfig[$name]))
         return $dynconfig[$name];
      else
@@ -109,7 +109,7 @@ class sfSslRequirementActionMixin
    */
   protected function sslRequired($action)
   {
-    if ( null !== ($var = $this->getDynamicConfigValue($action, self::SECURITY_REQUIRE_SSL, null)))
+    if ( null !== ($var = $this->getSslDynamicConfigValue($action, self::SECURITY_REQUIRE_SSL, null)))
        return $var;
     else
        return $action->getSecurityValue(self::SECURITY_REQUIRE_SSL, false);
@@ -126,7 +126,7 @@ class sfSslRequirementActionMixin
   {
     if ($this->sslRequired($action))
         return true;
-    elseif ( null !== ($var = $this->getDynamicConfigValue($action, self::SECURITY_ALLOW_SSL, null)))
+    elseif ( null !== ($var = $this->getSslDynamicConfigValue($action, self::SECURITY_ALLOW_SSL, null)))
        return $var;
     else 
        return $action->getSecurityValue(self::SECURITY_ALLOW_SSL, false);
@@ -141,7 +141,7 @@ class sfSslRequirementActionMixin
    */
   protected function sslGenerate($action)
   {
-    if ( null !== ($var = $this->getDynamicConfigValue($action, self::SECURITY_GENERATE_SSL, null)))
+    if ( null !== ($var = $this->getSslDynamicConfigValue($action, self::SECURITY_GENERATE_SSL, null)))
        return $var;
     else 
        return $action->getSecurityValue(self::SECURITY_GENERATE_SSL, false);
