@@ -16,7 +16,15 @@ The plugin also adds 3 new `sfAction` methods (via the mixins design pattern): `
 
     or via svn checkout
 
-        $ svn co http://svn.symfony-project.com/plugins/sfSslRequirementExtraPlugin/
+        $ cd plugins; svn co http://svn.symfony-project.com/plugins/sfSslRequirementExtraPlugin/trunk sfSslRequirementExtraPlugin
+
+  * Enable sfSslRequirementExtraPlugin (if not automatically enabled) @ config/ProjectConfiguration.class.php
+
+        [php]
+        public function setup()
+        {
+     	  $this->enablePlugins( array('sfSslRequirementExtraPlugin'));
+        }
 
   * Activate the filter in your `filters.yml` (for ssl requirement during url matching)
 
