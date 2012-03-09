@@ -23,5 +23,4 @@ interface actionsSslDynConfigIface
   * @return array
   */
   public function getSslRequirementGenerateDynamicConfig( $actionName, $routeParams );
-
 }

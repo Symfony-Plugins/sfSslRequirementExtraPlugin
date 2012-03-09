@@ -33,7 +33,7 @@ class sfActionSecurityConfigurationContainer
 
     // cache the shit for one module (per execution)
     if (!isset(self::$securities[$appName.$moduleName])) {
-    	// try to gen caching if we are "called" from the current application
+    	// try to get caching if we are "called" from the current application
 
     	$localSecPath = 'modules/'.$moduleName.'/config/security.yml' ;
     	$cached = false ;

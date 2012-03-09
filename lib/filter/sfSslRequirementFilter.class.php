@@ -56,6 +56,10 @@ class sfSslRequirementFilter extends sfFilter
 	    { 
 	       $sslConfig = new $class();
            $dynConfig = call_user_func( array($sslConfig, 'getSslRequirementMatchDynamicConfig'), $actionName, $actionInstance);
+           if ( !is_array($dynConfig) )
+              throw new sfException("LOGICAL: getSslRequirementMatchDynamicConfig() should return an array().");
+           if ( isset($dynConfig[sfSslRequirementActionMixin::SECURITY_GENERATE_SSL]))
+              throw new sfException("LOGICAL: getSslRequirementMatchDynamicConfig() should not configure ".sfSslRequirementActionMixin::SECURITY_GENERATE_SSL);
            $actionInstance->setSslDynamicConfig( $dynConfig ); // mixin
 	    }
 
@@ -98,8 +102,6 @@ class sfSslRequirementFilter extends sfFilter
            }
         } // post
       } // http
-      
-
     }
 
     if (!$exit)

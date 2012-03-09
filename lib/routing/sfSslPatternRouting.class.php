@@ -19,8 +19,9 @@ class sfSslPatternRouting extends sfPatternRouting
    *
    * Available options:
    *
-   *  * application:           The application that this routing is located at 
-   *           (to generate ssl urls based on generate_ssl security.yml entry)       
+   *  * application: [optional]   The application that this routing is located at 
+   *           (to generate ssl urls based on generate_ssl security.yml entry) 
+   *           When not specified sf_app configuration variable is used
    *
    * @see sfPatternRouting
    */
@@ -30,12 +31,7 @@ class sfSslPatternRouting extends sfPatternRouting
       'application'                => null,
     ), $options);
     
-    if ( !$options['application'])
-    {
-    	throw new sfConfigurationException('Application routing param has to be defined for sfSslPatternRouting routing.');
-    }
-
-    $this->appName = $options['application'] ;
+    $this->appName = ($options['application'] ? $options['application'] : sfConfig::get('sf_app', null)) ;
     if (!is_readable(sfConfig::get('sf_apps_dir'). '/'. $this->appName))
     {
     	throw new sfConfigurationException('Invalid application ('.$this->appName.') specified in routing params');
@@ -152,6 +148,8 @@ class sfSslPatternRouting extends sfPatternRouting
 	{
 	   $sslConfig = new $class();
        $dynConfig = call_user_func( array($sslConfig, 'getSslRequirementGenerateDynamicConfig'), $actionName, $params);
+       if ( !is_array($dynConfig) )
+          throw new sfException("LOGICAL: getSslRequirementGenerateDynamicConfig() should return an array().");
        $action->setSslDynamicConfig( $dynConfig );
 	}
 	

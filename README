@@ -1,91 +1,219 @@
-= sfSslRequirementExtra plugin (for symfony 1.4) =
+# sfSslRequirementExtra plugin
 
-== Overview ==
+## Overview
 
-The `sfSslRequirementExtra` is a symfony plugin that provides SSL encryption support for your module actions.
+The `sfSslRequirementExtra` is a symfony plugin that provides SSL integration for your application. Note that you should already have a webserver configured with ssl.
 
-It gives you 3 new security settings: `require_ssl`, `allow_ssl` and `generate_ssl`, allowing you to fully configure ssl requirement during url matching as well as url generation. Read more for explanations.
+It gives you 3 new security settings (specified in module's `security.yml`): `require_ssl`, `allow_ssl` and `generate_ssl`, allowing you to fully configure ssl requirement during url matching as well as url generation. Read more for explanations.
 
 The plugin also adds 3 new `sfAction` methods (via the mixins design pattern): `->sslRequired()`, `->sslAllowed()`, `->sslGenerate()`.
 
-== Installation ==
+## Installation
 
   * Install the plugin via plugin install
 
-  {{{
-    symfony plugin:install sfSslRequirementExtraPlugin
-  }}}
+        $ symfony plugin:install sfSslRequirementExtraPlugin
 
-  * or via svn checkout
+    or via svn checkout
 
-  {{{
-    svn co http://TODOTDO
-  }}}
+        $ svn co http://svn.symfony-project.com/plugins/sfSslRequirementExtraPlugin/
 
   * Activate the filter in your `filters.yml` (for ssl requirement during url matching)
 
-  {{{
-    [...]
-    sfSslRequirement:
-      class: sfSslRequirementFilter
+        [yml]
+        [...]
+        sfSslRequirementExtra:
+          class: sfSslRequirementFilter
 
-    cache: ~
-    execution: ~
-  }}}
+        cache: ~
+        execution: ~
 
-  * Setup the routing factory in your `factories.yml` (for ssl requirement during url generation, i.e. when generate_ssl security oiption is set). 
-
-  {{{
-    routing:
-      class: sfSslPatternRouting
-  }}}
+  * Setup the routing factory in your `factories.yml` (for ssl requirement during url generation, i.e. when `generate_ssl` security option is set). 
+        
+        [yml]
+        routing:
+          class: sfSslPatternRouting
 
   * Clear your cache
 
-  {{{
-    symfony cc
-  }}}
+        $ symfony cc
 
-== Quick configure ==
+## Quick Configuration
 
 To force SSL on an module/action (with GET http method):
 
-  * Add the following snippet to the module `security.yml`:
+  * Add the following snippet to the module's `security.yml` (under appdir/moduleName/config):
 
-  {{{
-    actionName:
-      require_ssl: true
-  }}}
+        [yml]
+        actionName:
+          require_ssl: true
 
   * You're done. Now, if you try to access the `actionName` with HTTP, you will be automatically redirected to HTTPS.
 
-  * The `actionName` listed here is an example.  Substitute with your actual action name.
+NOTE: The `actionName` listed here is an example.  Substitute with your actual action name.
 
-== Ssl Configuration ==
+## SSL Requirements Configuration
 
-Until this point you would be fine with forcing HTTPS. What about forcing HTTP, allowing both HTTP and HTTPS, controlling ssl requirements for POST actions? You can configure sfSslRequirementExtra plugin more precicely, to fullfill these requirements.
+Until this point you would be fine with forcing HTTPS for GET actions. What about forcing HTTP, allowing both HTTP and HTTPS or controlling ssl requirements for POST actions? You can configure sfSslRequirementExtra plugin more precicely to fullfill these requirements.
 
-Ssl requirements can be configured per module or per module/action basis. To configure the hole module just add the configuration entries under all: key in the module's `security.yml`. 
+SSL requirements can be configured per module or per module/action basis. To configure the hole module just add the configuration entries under all: key in the module's `security.yml`. To configure one module's action add the configuration entries under actionName: key in the module's `security.yml`.
 
-The supported configuration directives are (All the default options are false):
+The supported configuration directives for the `security.yml`, with their default values, are:
+
+    [yml]
+    all:
+      require_ssl: false
+      allow_ssl: false
+      generate_ssl: false
+
+Explanations:
 
  * **allow_ssl**: true|false - When true both HTTP and HTTPS are allowed. When false requests are forced to HTTP.
  * **require_ssl**: true|false - When true requests are forced to HTTPS. This has higher priority than allow_ssl.
  * **generate_ssl**: true|false - When true route generation is done with respect to the requirements of `allow_ssl` and `require_ssl` configuration directives. Note that you should have set the correct routing factory for this to work, as described in the installation steps.
 
-== Plugin configuration ==
+## Logic
 
-Some options can be configured for the hole plugin. These are specified in `app.yml` (application or global) and are the following:
+  * During URL matching, 
 
-  {{{
-    
+        if (not POSTing)
+           if (not secured [HTTP])
+              if (require_ssl)
+                 redirect to HTTPS
+           elseif (secured [HTTPS])
+              if (not allow_ssl)
+                 redirect to HTTP
+        elseif (POSTing and strict_post = true)
+           if (not secured [HTTP])
+              if (require_ssl)
+                 throw logical exception (misconfiguration) 
 
+  * During URL generation
 
+        if (generate_ssl)
+           if (require_ssl)
+              if (not request has ssl)
+                 if (route absolute)
+                    write secure url (HTTPS)
+                 else
+                    throw logical exception (route should be generated absolutely)
+           elseif (not allow_ssl)
+              if (request has ssl)
+                 if (route absolute)
+                    write non-secure url (HTTP)
+                 else
+                    throw logical exception (route should be generated absolutely)
 
-== Logic ==
+## Plugin configuration
 
-Only execute once per request and SF_ENVIRONMENT in one of the environments configured in app_disable_sslfilter
-  * if not posting
-   * if secured
-    * then check if its allowed else redirect from https to http
-    * else if secured required redirect from http to https
+Some options can be configured for the hole plugin. These are specified in `app.yml` (application or global) and are the following (with the default values shown):
+
+    [yml]
+    all:
+      sfSslRequirementExtraPlugin:
+        # completely disable ssf requirement plugin
+        disable: false
+        # if set, an exception is thrown when insecure post data have been POSTed
+        strict_post: true
+
+ **Notes**:
+
+  * Strict posting (true by default) would throw a runtime exception when data that should be transmitted securely where already sent over plain http. This does not prevent data exposure, in the first time, but pinpoints the misconfiguration to the developer. The solution to this is to secure the POST action (with require_ssl=true) and generate the url in an absolute way. To do this in a template you could write:
+
+        [php]
+        url_for('route_name', array(route_params), true)
+
+        link_to('Text', 'route_name', array('absolute'=>true))
+
+    You can skip this behaivour by specifying strict_post=false in the `app.yml`.
+
+## Dynamic configuration
+
+Until this point you have configured all the aspects of ssl requirements during url matching or generation in a `static` manner. But what about if you want to require ssl on an action only when the user is authenticated? (This would make sense when you want to serve your content at your authenticated users securely, and serve the same content non-securely at guests). Or if you would like to control ssl requirement depending on request parameters. (This would make sense when you use the same action to serve content for different purposes, like atom feeds. In this case the sf_format parameter differentiates the 2 scenarios)
+
+To accomplish these and other cases where **dynamic configuration** of the ssl requirements is needed you should follow these steps:
+
+  * Create a file named `sslDynConfig.class.php` under `moduleName/config` directory (the same dir whe `security.yml` lives).
+
+  * In this file, declare a class named `<moduleName>ActionsSslDynConfig` that implements the `actionsSslDynConfigIface` interface:
+
+        [php] 
+        /**
+         * This interface must be implemented from <moduleName>ActionsSslDynConfig classes for each
+         *   module that needs to provided dynamic ssl requirement configuration 
+         */
+        interface actionsSslDynConfigIface
+        {
+         /**
+          * Called from sf_ssl_requirement plugin, to dynamically configure it during URL MATCHING
+          * 
+          * @param string $actionName
+          * @param sfAction $actionInstance
+          * @return array
+          */
+          public function getSslRequirementMatchDynamicConfig( $actionName, $actionInstance );
+
+         /**
+          * Called from sf_ssl_requirement plugin, to dynamically configure it during URL GENERATION
+          * 
+          * @param string $actionName
+          * @param array $routeParams
+          * @return array
+          */
+          public function getSslRequirementGenerateDynamicConfig( $actionName, $routeParams );
+        }
+
+  Dynamic configuration is done seperately for URL MATCHING and URL GENERATION with the `->getSslRequirementMatchDynamicConfig()` and `->getSslRequirementGenerateDynamicConfig()` methods, respectivelly. Note that it is not mandatory (and possible) to define the same dynamic configuration for URL matching and generation for a specific action.
+
+  Dynamic configuration has higher priority than the static configuration (defined in `security.yml`).
+
+  **WARNING**: Dynamic configuration can damage your brain, use with caution.
+
+  * Implement the logic on these methods and return an array of ssl requirement configuration parameters (as described in `"Ssl Requirements Configuration"` section above).
+
+  * For URL MATCHING you have the $actionName and $actionInstance parameters. Note that the `getSslRequirementMatchDynamicConfig()` should always return an array, exluding the `generate_ssl` parameter (as this does not have meaning during url matching).
+
+    **An example**: You want to require_ssl for the `index` action when sf_format is not atom (i.e. for normal html content) and when the user is authenticated. Moreover you want to require_ssl on the `show` action when the user is authenticated. This is how to do it:
+
+        [php]
+        public function getSslRequirementMatchDynamicConfig( $actionName, $actionInstance )
+        {
+            $request = $actionInstance->getRequest();
+            $user = $actionInstance->getUser();
+            switch ($actionName) {
+               case 'index':
+                  if ($request->getParameter('sf_format') !== 'atom' && $user->isAuthenticated() ) 
+                     return array('require_ssl'=>true);
+                  break;
+
+               case 'show' :
+                  if ($user->isAuthenticated())
+                      return array('require_ssl'=>true);
+                  break;
+            }
+
+            // no dynamic config
+            return array();
+        }
+
+  * For URL GENERATION you have the $actionName and the $routeParams array parameters. Note that the `getSslRequirementGenerateDynamicConfig()` should always return an array.
+
+    **An example**: You want to generate the route for the `index` action with non-secure protocol, when the sf_format is atom. I.e. you want the atom feed links to always be in http, irrelevant of the current request protocol. This is how to do it:
+
+        [php]
+        public function getSslRequirementGenerateDynamicConfig($actionName, $routeParams)
+        {
+            switch ($actionName) {
+               case 'index':
+                  // on index, format atom, generate ssl (dissallow ssl)
+                  if (isset($routeParams['sf_format']) && $routeParams['sf_format'] === 'atom') {
+                     return array('generate_ssl'=>true);
+                  }
+                  break;
+            }
+            // not dynamic config
+            return array();
+        }
+
+These are some classic examples where dynamic configuration of the ssl requirements is usefull. Feel free to use it for any other schenario it might fit your needs.
+
