@@ -1,0 +1,91 @@
+= sfSslRequirementExtra plugin (for symfony 1.4) =
+
+== Overview ==
+
+The `sfSslRequirementExtra` is a symfony plugin that provides SSL encryption support for your module actions.
+
+It gives you 3 new security settings: `require_ssl`, `allow_ssl` and `generate_ssl`, allowing you to fully configure ssl requirement during url matching as well as url generation. Read more for explanations.
+
+The plugin also adds 3 new `sfAction` methods (via the mixins design pattern): `->sslRequired()`, `->sslAllowed()`, `->sslGenerate()`.
+
+== Installation ==
+
+  * Install the plugin via plugin install
+
+  {{{
+    symfony plugin:install sfSslRequirementExtraPlugin
+  }}}
+
+  * or via svn checkout
+
+  {{{
+    svn co http://TODOTDO
+  }}}
+
+  * Activate the filter in your `filters.yml` (for ssl requirement during url matching)
+
+  {{{
+    [...]
+    sfSslRequirement:
+      class: sfSslRequirementFilter
+
+    cache: ~
+    execution: ~
+  }}}
+
+  * Setup the routing factory in your `factories.yml` (for ssl requirement during url generation, i.e. when generate_ssl security oiption is set). 
+
+  {{{
+    routing:
+      class: sfSslPatternRouting
+  }}}
+
+  * Clear your cache
+
+  {{{
+    symfony cc
+  }}}
+
+== Quick configure ==
+
+To force SSL on an module/action (with GET http method):
+
+  * Add the following snippet to the module `security.yml`:
+
+  {{{
+    actionName:
+      require_ssl: true
+  }}}
+
+  * You're done. Now, if you try to access the `actionName` with HTTP, you will be automatically redirected to HTTPS.
+
+  * The `actionName` listed here is an example.  Substitute with your actual action name.
+
+== Ssl Configuration ==
+
+Until this point you would be fine with forcing HTTPS. What about forcing HTTP, allowing both HTTP and HTTPS, controlling ssl requirements for POST actions? You can configure sfSslRequirementExtra plugin more precicely, to fullfill these requirements.
+
+Ssl requirements can be configured per module or per module/action basis. To configure the hole module just add the configuration entries under all: key in the module's `security.yml`. 
+
+The supported configuration directives are (All the default options are false):
+
+ * **allow_ssl**: true|false - When true both HTTP and HTTPS are allowed. When false requests are forced to HTTP.
+ * **require_ssl**: true|false - When true requests are forced to HTTPS. This has higher priority than allow_ssl.
+ * **generate_ssl**: true|false - When true route generation is done with respect to the requirements of `allow_ssl` and `require_ssl` configuration directives. Note that you should have set the correct routing factory for this to work, as described in the installation steps.
+
+== Plugin configuration ==
+
+Some options can be configured for the hole plugin. These are specified in `app.yml` (application or global) and are the following:
+
+  {{{
+    
+
+
+
+== Logic ==
+
+Only execute once per request and SF_ENVIRONMENT in one of the environments configured in app_disable_sslfilter
+  * if not posting
+   * if secured
+    * then check if its allowed else redirect from https to http
+    * else if secured required redirect from http to https

@@ -1,0 +1,6 @@
+all:
+  sfSslRequirementExtraPlugin:
+    # completely disable ssf requirement plugin
+    disable: false
+    # if set, an exception is throw when insecure post data have been POSTed
+    strict_post: true
